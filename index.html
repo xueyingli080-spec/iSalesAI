@@ -246,7 +246,34 @@
             }
         }
     </style>
-    <script>var UPDATE_PROGRESS_URL = 'https://ssc.test.zte.com.cn/zte-crm-eva-zuul/zte-crm-project-info/skill/updateProgress'; var RECEIVER_EMP_NO = '10290844'; var __RN_REQ_SEQ = 0; var __RN_PENDING = {}; function __rnMakeReqId() { __RN_REQ_SEQ = __RN_REQ_SEQ + 1; return RECEIVER_EMP_NO + '_' + Date.now() + '_' + __RN_REQ_SEQ; } function __rnToError(err) { if (!err) { return new Error('Unknown error'); } if (err instanceof Error) { return err; } if (typeof err === 'string') { return new Error(err); } if (typeof err === 'object' && typeof err.message === 'string' && err.message) { return new Error(err.message); } try { return new Error(JSON.stringify(err)); } catch (_) { return new Error(String(err)); } } function __rnHandleMessage(event) { try { var raw = event && event.data !== undefined ? event.data : event; var res = raw; if (typeof raw === 'string') { res = JSON.parse(raw); } if (!res) { return; } var payload = res && res.data ? res.data : res; if (!payload || !payload.reqId) { return; } var p = __RN_PENDING[payload.reqId]; if (!p) { return; } delete __RN_PENDING[payload.reqId]; if (p.timer) { clearTimeout(p.timer); } if (payload.error) { p.reject(__rnToError(payload.error)); } else { p.resolve(payload.result !== undefined ? payload.result : payload); } } catch (_) { } } function __rnInstallListener() { if (window.__progressReminderRnListenerInstalled) { return; } window.__progressReminderRnListenerInstalled = true; try { window.addEventListener('message', __rnHandleMessage, false); } catch (_) { } try { document.addEventListener('message', __rnHandleMessage, false); } catch (_) { } } function rnRequest(param) { return new Promise(function (resolve, reject) { if (!window.ReactNativeWebView || typeof window.ReactNativeWebView.postMessage !== 'function') { reject(new Error('非 RN WebView 环境，无法发起请求')); return; } __rnInstallListener(); var reqId = __rnMakeReqId(); var timer = setTimeout(function () { var p = __RN_PENDING[reqId]; if (!p) { return; } delete __RN_PENDING[reqId]; p.reject(new Error('RN request timeout')); }, 15000); __RN_PENDING[reqId] = { resolve: resolve, reject: reject, timer: timer }; window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'request', data: { reqId: reqId, url: param.url, method: param.method || 'GET', headers: param.headers || {}, body: param.body || {} } })); }); } function showToast(message) { var toast = document.getElementById('toast'); if (!toast) { return; } toast.textContent = message; toast.style.display = 'block'; clearTimeout(window.__progressReminderToastTimer); window.__progressReminderToastTimer = setTimeout(function () { toast.style.display = 'none'; }, 2200); } function connectWebViewJavascriptBridge(callback) { var userAgent = navigator.userAgent; var iphone = userAgent.indexOf("iPhone") > -1; var iPad = userAgent.indexOf("iPad") > -1; if (iphone || iPad) { if (window.WebViewJavascriptBridge) { return callback(WebViewJavascriptBridge); } if (window.WVJBCallbacks) { return window.WVJBCallbacks.push(callback); } window.WVJBCallbacks = [callback]; var WVJBIframe = document.createElement('iframe'); WVJBIframe.style.display = 'none'; WVJBIframe.src = 'wvjbscheme://__BRIDGE_LOADED__'; document.documentElement.appendChild(WVJBIframe); setTimeout(function () { document.documentElement.removeChild(WVJBIframe) }, 0); } else { if (window.WebViewJavascriptBridge) { callback(WebViewJavascriptBridge); } else { document.addEventListener('WebViewJavascriptBridgeReady', function () { callback(WebViewJavascriptBridge); }, false); } } } function setSaveButtonState(button, disabled, text) { if (!button) { return; } button.disabled = disabled; button.textContent = text; } function buildHeaders() { var headers = { 'Content-Type': 'application/json' }; return headers; } function collectPayload(panel) { return { id: panel.getAttribute('data-progress-id'), portfolioId: panel.getAttribute('data-portfolio-id'), title: getFieldValue(panel, '.js-title'), currentProgress: getFieldValue(panel, '.js-current-progress'), nextPlan: getFieldValue(panel, '.js-next-plan'), issuesRisks: getFieldValue(panel, '.js-issues-risks'), projectPhase: getFieldValue(panel, '.js-project-phase'), warningLight: getFieldValue(panel, '.js-warning-light'), resourceRequest: getFieldValue(panel, '.js-resource-request'), notificationEmpNo: RECEIVER_EMP_NO }; } function getFieldValue(panel, selector) { var target = panel.querySelector(selector); if (!target) { return ''; } return typeof target.value === 'string' ? target.value.trim() : ''; } function saveProgress(button) { var panel = button.closest('.js-project-panel'); if (!panel) { return; } var payload = collectPayload(panel); if (!payload.id) { showToast('缺少进展ID，无法保存'); return; } if (!UPDATE_PROGRESS_URL) { showToast('未配置保存地址'); return; } setSaveButtonState(button, true, '保存中...'); rnRequest({ url: UPDATE_PROGRESS_URL, method: 'POST', headers: buildHeaders(), body: payload }).then(function (result) { if (result && typeof result === 'object') { var ok = result.ok; var status = result.status; if (ok === false || (typeof status === 'number' && status >= 400)) { var text = result.text || result.body || result.message || ''; var brief = text ? String(text).slice(0, 160) : ''; throw new Error('HTTP_' + status + (brief ? ('_' + brief) : '')); } } showToast('保存成功'); }).catch(function (err) { var msg = (err && err.message) ? String(err.message) : ''; if (!msg) { try { msg = JSON.stringify(err); } catch (_) { msg = String(err); } } showToast(msg ? ('保存失败：' + msg) : '保存失败，请稍后重试'); }).finally(function () { setSaveButtonState(button, false, '确定'); try { if (typeof window.autoFit === 'function') { window.autoFit(); } } catch (_) { } }); } connectWebViewJavascriptBridge(function (bridge) { bridge.init?.(function (message, responseCallback) { }); }); var IGPT_TOKEN = ''; function igptGetFrameId() { return new URLSearchParams(location.hash.substring(1)).get('frameId'); } function igptPost(data) { var raw = JSON.stringify(data); try { if (window.parent && typeof window.parent.postMessage === 'function') { window.parent.postMessage(raw, '*'); } } catch (_) { } try { if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) { window.ReactNativeWebView.postMessage(raw); } } catch (_) { } } function igptNotifyLoaded() { igptPost({ type: 'Loaded', data: { frameId: igptGetFrameId() } }); } window.addEventListener('message', function (event) { var raw = event.data, msg = raw; if (typeof raw === 'string') { try { msg = JSON.parse(raw); } catch (_) { return; } } if (!msg || msg.type !== 'data') { return; } var ssoInfo = msg.data && msg.data.ssoInfo; if (ssoInfo && typeof ssoInfo['X-Auth-Value'] === 'string') { IGPT_TOKEN = ssoInfo['X-Auth-Value']; showToast('getToken::' + IGPT_TOKEN); } }, false); igptNotifyLoaded(); function getToken() { console.log('frameId::', igptGetFrameId()); console.log('token::', IGPT_TOKEN); showToast(IGPT_TOKEN ? ('getToken::' + IGPT_TOKEN) : 'getToken::尚未获取到token，请稍候'); } document.addEventListener('click', function (e) { var saveBtn = e.target.closest('.js-save-progress'); if (saveBtn) { e.preventDefault(); e.stopPropagation(); saveProgress(saveBtn); } }); (function () { var common = window.common || {}; window.common = common; common.postMessage = function (msg) { if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') { try { window.ReactNativeWebView.postMessage(msg) } catch (_) { } } }; var frameId = window.frameId || window.__frameId || window.__FRAME_ID || ''; common.setHeight = function (height) { common.postMessage(JSON.stringify({ type: 'setHeight', height: height, data: { frameId: frameId } })) }; function setHeight() { try { Promise.resolve().then(function () { setTimeout(function () { var container = document.querySelector('.main-container'); var height = (container && container.scrollHeight ? container.scrollHeight : document.body.scrollHeight) + 2; if (isNaN(height)) { return } common.setHeight(height) }, 100) }) } catch (_) { } } window.setHeight = setHeight; window.autoFit = window.setHeight; document.addEventListener('DOMContentLoaded', function () { setHeight() }); window.addEventListener('load', function () { setHeight() }); window.addEventListener('resize', function () { setHeight() }); document.addEventListener('toggle', function (e) { if (e && e.target && e.target.tagName === 'DETAILS') { setHeight() } }, true); document.addEventListener('click', function (e) { var summary = e.target && e.target.closest ? e.target.closest('.accordion-summary') : null; if (summary) { setHeight() } }, true); })();</script>
+    <script>function showToast(message){
+var toast=document.getElementById('toast');
+if(!toast){return;}
+toast.textContent=message;
+toast.style.display='block';
+clearTimeout(window.__progressReminderToastTimer);
+window.__progressReminderToastTimer=setTimeout(function(){toast.style.display='none';},2200);
+}
+function setHeight(){
+try{
+Promise.resolve().then(function(){setTimeout(function(){
+var container=document.querySelector('.main-container');
+var height=(container&&container.scrollHeight?container.scrollHeight:document.body.scrollHeight)+2;
+if(isNaN(height)){return;}
+var common=window.common;
+if(common&&typeof common.setHeight==='function'){common.setHeight(height);}
+},100);});
+}catch(_){}
+}
+window.setHeight=setHeight;
+window.autoFit=setHeight;
+document.addEventListener('DOMContentLoaded',setHeight);
+window.addEventListener('load',setHeight);
+window.addEventListener('resize',setHeight);
+document.addEventListener('click',function(e){
+var btn=e.target&&e.target.closest?e.target.closest('.js-save-progress'):null;
+if(btn){e.preventDefault();showToast('已确认');}
+});</script>
 </head>
 
 <body>
@@ -255,9 +282,9 @@
             <div class="page-title">周期进展填报提醒</div>
             <div>您当前有1个项目进展待查看和确认，已由 AI 为您生成进展草稿，请您查看和确认！</div>
         </div>
-        <details class="accordion-item" open>
-            <summary class="accordion-summary"><span class="summary-arrow">&gt;</span><span
-                    class="summary-text">海外标书智能解析智能工具项目组合1进展待确认</span></summary>
+        <div class="accordion-item">
+            <div class="accordion-summary"><span class="summary-arrow">&gt;</span><span
+                    class="summary-text">海外标书智能解析智能工具项目组合1进展待确认</span></div>
             <div class="accordion-body js-project-panel" data-progress-id="1301833188898246656"
                 data-portfolio-id="1282191554358194176">
                 <div class="base-row">
@@ -291,8 +318,8 @@
                         target="_blank" rel="noopener noreferrer">查看项目进展详情</a><button type="button"
                         class="save-btn js-save-progress">确定</button></div>
             </div>
-        </details>
-        <div style="margin-top:12px;"><button class="save-btn" type="button" onclick="getToken();">测试按钮</button></div>
+        </div>
+        
     </div>
     <div id="toast" class="toast"></div>
 </body>
